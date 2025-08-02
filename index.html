@@ -19,7 +19,7 @@
             font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
             background: linear-gradient(135deg, #CFE0EB 0%, #DAFAFA 100%);
             min-height: 100vh;
-            color: #000000;
+            color: #333;
         }
         .app {
             max-width: 1400px;
@@ -93,22 +93,10 @@
             border: 2px dashed #ccc;
             transition: background-color 0.3s;
         }
-        .urgent-important {
-            background: rgba(255, 192, 203, 0.3);
-            border-color: #FFC0CB;
-        }
-        .urgent-not-important {
-            background: rgba(255, 255, 0, 0.2);
-            border-color: #F0E68C;
-        }
-        .not-urgent-important {
-            background: rgba(120, 163, 212, 0.1);
-            border-color: #78A3D4;
-        }
-        .not-urgent-not-important {
-            background: rgba(200, 200, 200, 0.2);
-            border-color: #ccc;
-        }
+        .urgent-important { background: rgba(255, 192, 203, 0.3); border-color: #FFC0CB; }
+        .urgent-not-important { background: rgba(255, 255, 0, 0.2); border-color: #F0E68C; }
+        .not-urgent-important { background: rgba(120, 163, 212, 0.1); border-color: #78A3D4; }
+        .not-urgent-not-important { background: rgba(200, 200, 200, 0.2); border-color: #ccc; }
         .task-item {
             background: white;
             padding: 12px;
@@ -119,11 +107,7 @@
         }
         .task-item:active { cursor: grabbing; }
         .form-group { margin-bottom: 15px; }
-        .form-group label {
-            display: block;
-            margin-bottom: 5px;
-            font-weight: 500;
-        }
+        .form-group label { display: block; margin-bottom: 5px; font-weight: 500; }
         .form-group input, .form-group textarea, .form-group select {
             width: 100%;
             padding: 10px;
@@ -146,28 +130,17 @@
             transition: all 0.3s ease;
             margin: 5px;
         }
-        .btn:hover {
-            background: #8BADD3;
-            transform: translateY(-1px);
-        }
+        .btn:hover { background: #8BADD3; transform: translateY(-1px); }
         .btn-danger { background: #dc3545; }
         .btn-danger:hover { background: #c82333; }
         .btn-success { background: #28a745; }
         .btn-success:hover { background: #218838; }
         .btn-warning { background: #ffc107; color: #000; }
         .btn-warning:hover { background: #e0a800; }
-        .grid-view {
-            display: grid;
-            grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
-            gap: 20px;
-        }
+        .grid-view { display: grid; grid-template-columns: repeat(auto-fill, minmax(300px, 1fr)); gap: 20px; }
         .table-view { overflow-x: auto; }
         .table-view table { width: 100%; border-collapse: collapse; }
-        .table-view th, .table-view td {
-            padding: 12px;
-            text-align: left;
-            border-bottom: 1px solid #ddd;
-        }
+        .table-view th, .table-view td { padding: 12px; text-align: left; border-bottom: 1px solid #ddd; }
         .table-view th { background: #f8f9fa; font-weight: 600; }
         .modal {
             position: fixed; top: 0; left: 0;
@@ -189,34 +162,13 @@
         .priority-medium { border-left: 4px solid #ffc107; }
         .priority-high { border-left: 4px solid #dc3545; }
         .view-toggle { display: flex; gap: 10px; margin-bottom: 20px; }
-        .loading {
-            text-align: center;
-            padding: 40px;
-            color: #666;
-            font-size: 1.2rem;
-        }
-        .error, .success {
-            padding: 15px;
-            border-radius: 8px;
-            margin: 0 0 20px 0;
-            text-align: center;
-        }
+        .loading { text-align: center; padding: 40px; color: #666; font-size: 1.2rem; }
+        .error, .success { padding: 15px; border-radius: 8px; margin: 0 0 20px 0; text-align: center; }
         .error { background: #f8d7da; color: #721c24; }
         .success { background: #d4edda; color: #155724; }
         .completed { opacity: 0.6; text-decoration: line-through; }
-        .stats {
-            display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
-            gap: 15px;
-            margin-bottom: 20px;
-        }
-        .stat-card {
-            background: linear-gradient(135deg, #9DCAEB, #AFD5F0);
-            color: #033649;
-            padding: 15px;
-            border-radius: 10px;
-            text-align: center;
-        }
+        .stats { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 15px; margin-bottom: 20px; }
+        .stat-card { background: linear-gradient(135deg, #9DCAEB, #AFD5F0); color: #033649; padding: 15px; border-radius: 10px; text-align: center; }
         .stat-number { font-size: 2rem; font-weight: bold; margin-bottom: 5px; }
         .stat-label { font-size: 0.9rem; opacity: 0.9; }
     </style>
@@ -244,7 +196,6 @@
             const [error, setError] = useState('');
             const [success, setSuccess] = useState('');
 
-            // Load data from Supabase
             const loadData = useCallback(async () => {
                 try {
                     setLoading(true);
@@ -257,36 +208,18 @@
                         supabase.from('notes').select('*').order('updated_at', { ascending: false })
                     ]);
 
-                    if (areasRes.error) throw areasRes.error;
-                    if (projectsRes.error) throw projectsRes.error;
-                    if (tasksRes.error) throw tasksRes.error;
-                    if (notesRes.error) throw notesRes.error;
+                    const checkError = (res, name) => { if (res.error) throw new Error(`Failed to load ${name}: ${res.error.message}`); return res.data || []; };
+                    const areasData = checkError(areasRes, 'areas');
+                    const projectsData = checkError(projectsRes, 'projects');
+                    const tasksData = checkError(tasksRes, 'tasks');
+                    const notesData = checkError(notesRes, 'notes');
 
-                    const areasData = areasRes.data || [];
-                    const projectsData = projectsRes.data || [];
-                    const tasksData = tasksRes.data || [];
-                    const notesData = notesRes.data || [];
-
-                    // Build relationships
-                    const projectsWithAreas = projectsData.map(project => ({
-                        ...project,
-                        area: project.area_id ? areasData.find(area => area.id === project.area_id) : null
-                    }));
-
-                    const tasksWithRelations = tasksData.map(task => {
-                        const project = projectsWithAreas.find(p => p.id === task.project_id);
-                        return {
-                            ...task,
-                            project: project,
-                            area: task.area_id ? areasData.find(a => a.id === task.area_id) : (project ? project.area : null)
-                        };
+                    const projectsWithAreas = projectsData.map(p => ({ ...p, area: p.area_id ? areasData.find(a => a.id === p.area_id) : null }));
+                    const tasksWithRelations = tasksData.map(t => {
+                        const project = projectsWithAreas.find(p => p.id === t.project_id);
+                        return { ...t, project, area: t.area_id ? areasData.find(a => a.id === t.area_id) : (project ? project.area : null) };
                     });
-
-                    const notesWithRelations = notesData.map(note => ({
-                        ...note,
-                        project: note.project_id ? projectsWithAreas.find(p => p.id === note.project_id) : null,
-                        area: note.area_id ? areasData.find(a => a.id === note.area_id) : null
-                    }));
+                    const notesWithRelations = notesData.map(n => ({ ...n, project: n.project_id ? projectsWithAreas.find(p => p.id === n.project_id) : null, area: n.area_id ? areasData.find(a => a.id === n.area_id) : null }));
 
                     setAreas(areasData);
                     setProjects(projectsWithAreas);
@@ -295,29 +228,23 @@
 
                 } catch (err) {
                     console.error("❌ Load data error:", err);
-                    setError(err.message || "เกิดข้อผิดพลาดในการโหลดข้อมูล");
+                    setError(err.message);
                 } finally {
                     setLoading(false);
                 }
             }, []);
 
-            // Auto-promotion system
             const checkAutoPromotion = useCallback(async () => {
                 try {
                     const threeDaysFromNow = new Date();
                     threeDaysFromNow.setDate(threeDaysFromNow.getDate() + 3);
                     
                     const tasksToPromote = tasks.filter(task => 
-                        task.category === 'not-urgent-important' &&
-                        task.due_date &&
-                        new Date(task.due_date) <= threeDaysFromNow &&
-                        task.status !== 'completed'
+                        task.category === 'not-urgent-important' && task.due_date && new Date(task.due_date) <= threeDaysFromNow && task.status !== 'completed'
                     );
 
                     if (tasksToPromote.length > 0) {
-                        const updates = tasksToPromote.map(task => 
-                            supabase.from('tasks').update({ category: 'urgent-important' }).eq('id', task.id)
-                        );
+                        const updates = tasksToPromote.map(task => supabase.from('tasks').update({ category: 'urgent-important' }).eq('id', task.id));
                         await Promise.all(updates);
                         showMessage(`อัปเดต ${tasksToPromote.length} งานเป็นเร่งด่วนและสำคัญแล้ว`);
                         loadData();
@@ -329,35 +256,25 @@
 
             useEffect(() => {
                 loadData();
-                const interval = setInterval(checkAutoPromotion, 3600000); // Check every hour
+                const interval = setInterval(checkAutoPromotion, 3600000);
                 return () => clearInterval(interval);
             }, [loadData, checkAutoPromotion]);
 
             const showMessage = (message, type = 'success') => {
-                if (type === 'success') {
-                    setSuccess(message);
-                    setTimeout(() => setSuccess(''), 3000);
-                } else {
-                    setError(message);
-                    setTimeout(() => setError(''), 5000);
-                }
+                (type === 'success' ? setSuccess : setError)(message);
+                setTimeout(() => { setSuccess(''); setError(''); }, 4000);
             };
             
             const renderView = () => {
                 if (loading) return <div className="loading">กำลังโหลดข้อมูล...</div>;
+                const props = { onUpdate: loadData, showMessage, areas, projects, tasks, notes };
                 switch (currentView) {
-                    case 'dashboard':
-                        return <Dashboard tasks={tasks} areas={areas} projects={projects} notes={notes} onUpdate={loadData} showMessage={showMessage} />;
-                    case 'tasks':
-                        return <TaskManager tasks={tasks} projects={projects} areas={areas} onUpdate={loadData} showMessage={showMessage} />;
-                    case 'projects':
-                        return <ProjectManager projects={projects} areas={areas} onUpdate={loadData} showMessage={showMessage} />;
-                    case 'areas':
-                        return <AreaManager areas={areas} onUpdate={loadData} showMessage={showMessage} />;
-                    case 'notes':
-                        return <NoteManager notes={notes} projects={projects} areas={areas} onUpdate={loadData} showMessage={showMessage} />;
-                    default:
-                        return <Dashboard tasks={tasks} areas={areas} projects={projects} notes={notes} onUpdate={loadData} showMessage={showMessage} />;
+                    case 'dashboard': return <Dashboard {...props} />;
+                    case 'tasks': return <TaskManager {...props} />;
+                    case 'projects': return <ProjectManager {...props} />;
+                    case 'areas': return <AreaManager {...props} />;
+                    case 'notes': return <NoteManager {...props} />;
+                    default: return <Dashboard {...props} />;
                 }
             };
 
@@ -380,26 +297,14 @@
             );
         }
 
-        // Generic CRUD Modal Component (Example for Areas, can be generalized)
-        function CrudManager({ items, table, fields, onUpdate, showMessage, children }) {
-            // This is a placeholder for a more advanced generic component.
-            // For now, individual manager components are clearer.
-        }
-
-        // Dashboard Component
         function Dashboard({ tasks, areas, projects, notes, onUpdate, showMessage }) {
-            const highPriorityTasks = tasks
-                .filter(task => task.priority === 'high' && task.status !== 'completed')
-                .sort((a, b) => new Date(a.due_date || '9999-12-31') - new Date(b.due_date || '9999-12-31'))
-                .slice(0, 3);
-            
+            const highPriorityTasks = tasks.filter(t => t.priority === 'high' && t.status !== 'completed').sort((a, b) => new Date(a.due_date || '9999-12-31') - new Date(b.due_date || '9999-12-31')).slice(0, 3);
             const tasksByCategory = {
                 'urgent-important': tasks.filter(t => t.category === 'urgent-important' && t.status !== 'completed'),
                 'not-urgent-important': tasks.filter(t => t.category === 'not-urgent-important' && t.status !== 'completed'),
                 'urgent-not-important': tasks.filter(t => t.category === 'urgent-not-important' && t.status !== 'completed'),
                 'not-urgent-not-important': tasks.filter(t => t.category === 'not-urgent-not-important' && t.status !== 'completed')
             };
-
             const completedTasks = tasks.filter(task => task.status === 'completed');
 
             const handleDragEnd = async (result) => {
@@ -410,23 +315,17 @@
                     if (error) throw error;
                     showMessage('อัปเดตหมวดหมู่งานเรียบร้อยแล้ว');
                     onUpdate();
-                } catch (err) {
-                    showMessage('เกิดข้อผิดพลาดในการอัปเดต: ' + err.message, 'error');
-                }
+                } catch (err) { showMessage(`เกิดข้อผิดพลาด: ${err.message}`, 'error'); }
             };
             
             const toggleTaskComplete = async (task) => {
                 try {
                     const newStatus = task.status === 'completed' ? 'pending' : 'completed';
-                    const { error } = await supabase.from('tasks')
-                        .update({ status: newStatus, completed_at: newStatus === 'completed' ? new Date().toISOString() : null })
-                        .eq('id', task.id);
+                    const { error } = await supabase.from('tasks').update({ status: newStatus, completed_at: newStatus === 'completed' ? new Date().toISOString() : null }).eq('id', task.id);
                     if (error) throw error;
                     showMessage('อัปเดตสถานะงานเรียบร้อยแล้ว');
                     onUpdate();
-                } catch (err) {
-                    showMessage('เกิดข้อผิดพลาดในการอัปเดต: ' + err.message, 'error');
-                }
+                } catch (err) { showMessage(`เกิดข้อผิดพลาด: ${err.message}`, 'error'); }
             };
 
             return (
@@ -438,7 +337,6 @@
                         <div className="stat-card"><div className="stat-number">{completedTasks.length}</div><div className="stat-label">งานที่เสร็จแล้ว</div></div>
                         <div className="stat-card"><div className="stat-number">{notes.length}</div><div className="stat-label">บันทึก</div></div>
                     </div>
-
                     <div className="card">
                         <h2 style={{ color: '#78A3D4', marginBottom: '20px' }}>🔥 งานสำคัญเร่งด่วน (Top 3)</h2>
                         <div className="priority-cards">
@@ -453,7 +351,6 @@
                             )) : <div className="priority-card"><h3>🎉 ยอดเยี่ยม!</h3><p>ไม่มีงานสำคัญเร่งด่วนในขณะนี้</p></div>}
                         </div>
                     </div>
-
                     <div className="card">
                         <h2 style={{ color: '#78A3D4', marginBottom: '20px' }}>📊 Eisenhower Matrix</h2>
                         <DragDropContext onDragEnd={handleDragEnd}>
@@ -490,7 +387,6 @@
             );
         }
 
-        // Generic Delete Function
         async function handleDeleteItem(id, table, onUpdate, showMessage) {
             if (!window.confirm(`คุณแน่ใจหรือไม่ที่จะลบรายการนี้?\nการกระทำนี้ไม่สามารถย้อนกลับได้`)) return;
             try {
@@ -498,72 +394,36 @@
                 if (error) throw error;
                 showMessage(`ลบรายการสำเร็จแล้ว`);
                 onUpdate();
-            } catch (err) {
-                showMessage(`เกิดข้อผิดพลาดในการลบ: ${err.message}`, 'error');
-            }
+            } catch (err) { showMessage(`เกิดข้อผิดพลาดในการลบ: ${err.message}`, 'error'); }
         }
 
-        // TaskManager Component
         function TaskManager({ tasks, projects, areas, onUpdate, showMessage }) {
             const [showModal, setShowModal] = useState(false);
             const [editingTask, setEditingTask] = useState(null);
-            
-            const initialFormState = {
-                title: '', description: '', due_date: '', priority: 'medium',
-                category: 'not-urgent-important', status: 'pending', project_id: '', area_id: ''
-            };
+            const initialFormState = { title: '', description: '', due_date: '', priority: 'medium', category: 'not-urgent-important', status: 'pending', project_id: '', area_id: '' };
             const [formData, setFormData] = useState(initialFormState);
 
-            const handleNew = () => {
-                setEditingTask(null);
-                setFormData(initialFormState);
-                setShowModal(true);
-            };
-
-            const handleEdit = (task) => {
-                setEditingTask(task);
-                setFormData({
-                    title: task.title,
-                    description: task.description || '',
-                    due_date: task.due_date || '',
-                    priority: task.priority,
-                    category: task.category,
-                    status: task.status || 'pending',
-                    project_id: task.project_id || '',
-                    area_id: task.area_id || ''
-                });
-                setShowModal(true);
-            };
+            const handleNew = () => { setEditingTask(null); setFormData(initialFormState); setShowModal(true); };
+            const handleEdit = (task) => { setEditingTask(task); setFormData({ title: task.title, description: task.description || '', due_date: task.due_date || '', priority: task.priority, category: task.category, status: task.status || 'pending', project_id: task.project_id || '', area_id: task.area_id || '' }); setShowModal(true); };
 
             const handleSubmit = async (e) => {
                 e.preventDefault();
                 try {
                     const data = { ...formData, project_id: formData.project_id || null, area_id: formData.area_id || null, due_date: formData.due_date || null };
-                    const { error } = editingTask 
-                        ? await supabase.from('tasks').update(data).eq('id', editingTask.id)
-                        : await supabase.from('tasks').insert([data]);
+                    const { error } = editingTask ? await supabase.from('tasks').update(data).eq('id', editingTask.id) : await supabase.from('tasks').insert([data]);
                     if (error) throw error;
-                    
                     showMessage(editingTask ? 'อัปเดตงานเรียบร้อยแล้ว' : 'เพิ่มงานใหม่เรียบร้อยแล้ว');
-                    setShowModal(false);
-                    onUpdate();
-                } catch (err) {
-                    showMessage(`เกิดข้อผิดพลาด: ${err.message}`, 'error');
-                }
+                    setShowModal(false); onUpdate();
+                } catch (err) { showMessage(`เกิดข้อผิดพลาด: ${err.message}`, 'error'); }
             };
             
             const toggleComplete = async (task) => {
-                 try {
+                try {
                     const newStatus = task.status === 'completed' ? 'pending' : 'completed';
-                    const { error } = await supabase.from('tasks')
-                        .update({ status: newStatus, completed_at: newStatus === 'completed' ? new Date().toISOString() : null })
-                        .eq('id', task.id);
+                    const { error } = await supabase.from('tasks').update({ status: newStatus, completed_at: newStatus === 'completed' ? new Date().toISOString() : null }).eq('id', task.id);
                     if (error) throw error;
-                    showMessage('อัปเดตสถานะงานเรียบร้อยแล้ว');
-                    onUpdate();
-                } catch (err) {
-                    showMessage('เกิดข้อผิดพลาดในการอัปเดต: ' + err.message, 'error');
-                }
+                    showMessage('อัปเดตสถานะงานเรียบร้อยแล้ว'); onUpdate();
+                } catch (err) { showMessage(`เกิดข้อผิดพลาด: ${err.message}`, 'error'); }
             };
 
             return (
@@ -613,77 +473,36 @@
             );
         }
 
-        // Generic Manager for Projects, Areas, Notes
         function GenericManager({ title, items, table, fields, onUpdate, showMessage, areas = [], projects = [] }) {
             const [viewMode, setViewMode] = useState('grid');
             const [showModal, setShowModal] = useState(false);
             const [editingItem, setEditingItem] = useState(null);
-
             const initialFormState = fields.reduce((acc, field) => ({ ...acc, [field.name]: field.initial || '' }), {});
             const [formData, setFormData] = useState(initialFormState);
 
-            const handleNew = () => {
-                setEditingItem(null);
-                setFormData(initialFormState);
-                setShowModal(true);
-            };
-            
-            const handleEdit = (item) => {
-                setEditingItem(item);
-                const itemFormData = fields.reduce((acc, field) => ({ ...acc, [field.name]: item[field.name] || field.initial || '' }), {});
-                setFormData(itemFormData);
-                setShowModal(true);
-            };
+            const handleNew = () => { setEditingItem(null); setFormData(initialFormState); setShowModal(true); };
+            const handleEdit = (item) => { setEditingItem(item); const itemFormData = fields.reduce((acc, field) => ({ ...acc, [field.name]: item[field.name] || field.initial || '' }), {}); setFormData(itemFormData); setShowModal(true); };
 
             const handleSubmit = async (e) => {
                 e.preventDefault();
                 try {
-                    // Convert empty strings to null for foreign keys
-                    const data = Object.keys(formData).reduce((acc, key) => {
-                        if (key.endsWith('_id') && formData[key] === '') {
-                            acc[key] = null;
-                        } else {
-                            acc[key] = formData[key];
-                        }
-                        return acc;
-                    }, {});
-
-                    const { error } = editingItem
-                        ? await supabase.from(table).update(data).eq('id', editingItem.id)
-                        : await supabase.from(table).insert([data]);
-
+                    const data = Object.keys(formData).reduce((acc, key) => { acc[key] = (key.endsWith('_id') && formData[key] === '') ? null : formData[key]; return acc; }, {});
+                    const { error } = editingItem ? await supabase.from(table).update(data).eq('id', editingItem.id) : await supabase.from(table).insert([data]);
                     if (error) throw error;
-                    
                     showMessage(editingItem ? `อัปเดต${title}เรียบร้อย` : `เพิ่ม${title}ใหม่เรียบร้อย`);
-                    setShowModal(false);
-                    onUpdate();
-                } catch (err) {
-                    showMessage(`เกิดข้อผิดพลาด: ${err.message}`, 'error');
-                }
+                    setShowModal(false); onUpdate();
+                } catch (err) { showMessage(`เกิดข้อผิดพลาด: ${err.message}`, 'error'); }
             };
             
             const renderField = (field) => {
-                const commonProps = {
-                    value: formData[field.name],
-                    onChange: (e) => setFormData({ ...formData, [field.name]: e.target.value })
-                };
-
+                const commonProps = { value: formData[field.name], onChange: (e) => setFormData({ ...formData, [field.name]: e.target.value }) };
                 switch (field.type) {
                     case 'textarea': return <textarea {...commonProps} rows="4" />;
                     case 'select':
                         const options = field.options === 'areas' ? areas : projects;
-                        return (
-                            <select {...commonProps}>
-                                <option value="">-- เลือก{field.label} --</option>
-                                {options.map(opt => <option key={opt.id} value={opt.id}>{opt.name}</option>)}
-                            </select>
-                        );
+                        return (<select {...commonProps}><option value="">-- เลือก{field.label} --</option>{options.map(opt => <option key={opt.id} value={opt.id}>{opt.name}</option>)}</select>);
                     case 'select-static':
-                        return (
-                             <select {...commonProps}>
-                                {field.options.map(opt => <option key={opt.value} value={opt.value}>{opt.label}</option>)}
-                            </select>
-                        );
+                        return (<select {...commonProps}>{field.options.map(opt => <option key={opt.value} value={opt.value}>{opt.label}</option>)}</select>);
                     default: return <input type={field.type || 'text'} {...commonProps} required={field.required} />;
                 }
             };
@@ -698,7 +517,6 @@
                                 <button className="btn" onClick={handleNew}>➕ เพิ่มใหม่</button>
                             </div>
                         </div>
-
                         {viewMode === 'grid' ? (
                             <div className="grid-view">
                                 {items.map(item => (
@@ -725,14 +543,11 @@
                             </div>
                         )}
                     </div>
-
                     {showModal && <div className="modal">
                         <div className="modal-content">
                             <h3>{editingItem ? `แก้ไข${title}` : `เพิ่ม${title}ใหม่`}</h3>
                             <form onSubmit={handleSubmit}>
-                                {fields.map(field => (
-                                    <div className="form-group" key={field.name}><label>{field.label} {field.required && '*'}</label>{renderField(field)}</div>
-                                ))}
+                                {fields.map(field => (<div className="form-group" key={field.name}><label>{field.label} {field.required && '*'}</label>{renderField(field)}</div>))}
                                 <div style={{ display: 'flex', gap: '10px', justifyContent: 'flex-end' }}><button type="button" className="btn" onClick={() => setShowModal(false)}>ยกเลิก</button><button type="submit" className="btn btn-success">{editingItem ? 'อัปเดต' : 'เพิ่ม'}</button></div>
                             </form>
                         </div>
@@ -749,18 +564,8 @@
             { name: 'start_date', label: 'วันที่เริ่ม', type: 'date' },
             { name: 'end_date', label: 'วันที่สิ้นสุด', type: 'date' }
         ];
-
-        const areaFields = [
-            { name: 'name', label: 'ชื่อพื้นที่', required: true },
-            { name: 'description', label: 'รายละเอียด', type: 'textarea' }
-        ];
-
-        const noteFields = [
-            { name: 'title', label: 'หัวข้อ', required: true },
-            { name: 'content', label: 'เนื้อหา', type: 'textarea', required: true },
-            { name: 'project_id', label: 'โปรเจค', type: 'select', options: 'projects' },
-            { name: 'area_id', label: 'พื้นที่', type: 'select', options: 'areas' }
-        ];
+        const areaFields = [ { name: 'name', label: 'ชื่อพื้นที่', required: true }, { name: 'description', label: 'รายละเอียด', type: 'textarea' } ];
+        const noteFields = [ { name: 'title', label: 'หัวข้อ', required: true }, { name: 'content', label: 'เนื้อหา', type: 'textarea', required: true }, { name: 'project_id', label: 'โปรเจค', type: 'select', options: 'projects' }, { name: 'area_id', label: 'พื้นที่', type: 'select', options: 'areas' } ];
 
         const ProjectManager = (props) => <GenericManager {...props} title="โปรเจค" items={props.projects} table="projects" fields={projectFields} />;
         const AreaManager = (props) => <GenericManager {...props} title="พื้นที่" items={props.areas} table="areas" fields={areaFields} />;
