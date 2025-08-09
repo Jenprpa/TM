@@ -113,6 +113,16 @@
             border: 1px solid rgba(229, 149, 114, 0.1);
             backdrop-filter: blur(15px);
         }
+        
+        .clickable-card {
+            cursor: pointer;
+            transition: transform 0.3s ease, box-shadow 0.3s ease;
+        }
+        .clickable-card:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 15px 45px rgba(229, 149, 114, 0.2);
+        }
+
 
         /* Stats Grid */
         .stats-grid {
@@ -343,11 +353,11 @@
                     </div>
                 </div>
                 <nav class="nav">
-                    <button class="nav-btn active" onclick="showView('dashboard', event)">📊 แดชบอร์ด</button>
-                    <button class="nav-btn" onclick="showView('tasks', event)">✅ งาน</button>
-                    <button class="nav-btn" onclick="showView('projects', event)">📁 โปรเจค</button>
-                    <button class="nav-btn" onclick="showView('areas', event)">🎯 พื้นที่</button>
-                    <button class="nav-btn" onclick="showView('notes', event)">📝 บันทึก</button>
+                    <button data-view="dashboard" class="nav-btn active" onclick="showView('dashboard', event)">📊 แดชบอร์ด</button>
+                    <button data-view="tasks" class="nav-btn" onclick="showView('tasks', event)">✅ งาน</button>
+                    <button data-view="projects" class="nav-btn" onclick="showView('projects', event)">📁 โปรเจค</button>
+                    <button data-view="areas" class="nav-btn" onclick="showView('areas', event)">🎯 พื้นที่</button>
+                    <button data-view="notes" class="nav-btn" onclick="showView('notes', event)">📝 บันทึก</button>
                     <button class="refresh-btn" onclick="loadData()">🔄 รีเฟรช</button>
                 </nav>
             </header>
@@ -426,6 +436,10 @@
                         <button class="btn btn-primary" onclick="showProjectModal()">➕ เพิ่มโปรเจค</button>
                     </div>
                     <input type="text" class="search-bar" id="project-search" placeholder="🔍 ค้นหาโปรเจค..." onkeyup="filterProjects()">
+                    <div class="filter-bar">
+                        <select class="filter-select" id="project-area-filter" onchange="filterProjects()"><option value="">ทุกพื้นที่</option></select>
+                        <button class="btn btn-warning" onclick="clearProjectFilters()">🗑️ ล้างตัวกรอง</button>
+                    </div>
                     <div class="grid-view" id="projects-grid"></div>
                 </div>
             </div>
@@ -476,15 +490,13 @@
 
     <script>
         // --- CONFIGURATION ---
-        // Set to false to connect to Google Sheets, true to use local demo data.
         const DEMO_MODE = false;
-        // Your Google Apps Script URL.
         const SCRIPT_URL = 'https://script.google.com/macros/s/AKfycby1N3LfTOooYShmmWnmEieSw7DiJ2zi9ONd44GSfCVjeEDdiz750VgMfmzFSx8ZTPlidg/exec';
 
         // --- GLOBAL STATE ---
         let currentData = { areas: [], projects: [], tasks: [], notes: [] };
         let editingId = null;
-        let confirmCallback = null; // Stores the function to run on confirmation.
+        let confirmCallback = null;
 
         // --- INITIALIZATION ---
         document.addEventListener('DOMContentLoaded', () => {
@@ -538,7 +550,6 @@
             showMessage('⏳ กำลังบันทึก...', 'info');
             try {
                 if (DEMO_MODE || !SCRIPT_URL || SCRIPT_URL.includes('YOUR_SCRIPT_URL')) {
-                    // Handle demo mode logic locally
                     handleDemoData(action, payload);
                     showMessage('✅ บันทึกข้อมูลในโหมดทดสอบสำเร็จ!', 'success');
                     return;
@@ -546,14 +557,13 @@
                 
                 const response = await fetch(SCRIPT_URL, {
                     method: 'POST',
-                    mode: 'no-cors', // Required for simple POST to Apps Script
+                    mode: 'no-cors',
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify({ action, data: payload })
                 });
                 
-                // Since 'no-cors' mode prevents reading the response, we optimistically reload.
                 showMessage('✅ ส่งคำขอเรียบร้อย! กำลังรีเฟรชข้อมูล...', 'success');
-                setTimeout(loadData, 1500); // Give script time to process
+                setTimeout(loadData, 1500);
 
             } catch (error) {
                 console.error('Send data error:', error);
@@ -673,7 +683,7 @@
                 return `<tr class="${task.status === 'completed' ? 'completed' : ''}">
                     <td><strong>${task.title}</strong>${task.description ? `<div style="font-size: 0.9rem; opacity: 0.7;">${task.description}</div>` : ''}</td>
                     <td><span style="color: ${isOverdue ? '#dc3545' : 'inherit'};">${task.due_date ? new Date(task.due_date).toLocaleDateString('th-TH') : '-'} ${isOverdue ? '⚠️' : ''}</span></td>
-                    <td><span class="tag" style="background: ${getPriorityColor(task.priority)};">${getPriorityText(task.priority)}</span></td>
+                    <td><span class="tag" style="background: ${getPriorityColor(task.priority)}; color: white; padding: 4px 8px; border-radius: 6px;">${getPriorityText(task.priority)}</span></td>
                     <td>${getCategoryText(task.category)}</td>
                     <td>${project?.name || '-'}</td>
                     <td><button class="btn ${task.status === 'completed' ? 'btn-warning' : 'btn-success'}" onclick="toggleTaskComplete('${task.id}')" style="padding: 6px 12px; font-size: 0.8rem;">${task.status === 'completed' ? '↩️ ยกเลิก' : '✅ เสร็จ'}</button></td>
@@ -684,7 +694,12 @@
 
         function filterProjects() {
             const searchTerm = document.getElementById('project-search').value.toLowerCase();
-            const filtered = currentData.projects.filter(p => p.name.toLowerCase().includes(searchTerm));
+            const area = document.getElementById('project-area-filter').value;
+            const filtered = currentData.projects.filter(p => {
+                const nameMatch = p.name.toLowerCase().includes(searchTerm);
+                const areaMatch = !area || p.area_id === area;
+                return nameMatch && areaMatch;
+            });
             renderProjects(filtered);
         }
 
@@ -692,14 +707,14 @@
             const container = document.getElementById('projects-grid');
             container.innerHTML = projects.map(project => {
                 const area = currentData.areas.find(a => a.id === project.area_id);
-                return `<div class="card">
+                return `<div class="card clickable-card" onclick="navigateToAndFilter('tasks', 'project', '${project.id}')">
                     <h3 style="color: #E59572;">${project.name}</h3>
                     <p style="margin: 10px 0;">${project.description || ''}</p>
                     <p><strong>🎯 พื้นที่:</strong> ${area?.name || 'ไม่ระบุ'}</p>
-                    <p><strong>📊 สถานะ:</strong> <span class="tag" style="background:${getStatusColor(project.status)};">${getStatusText(project.status)}</span></p>
+                    <p><strong>📊 สถานะ:</strong> <span class="tag" style="background:${getStatusColor(project.status)}; color: white; padding: 4px 8px; border-radius: 6px;">${getStatusText(project.status)}</span></p>
                     <div style="margin-top: 20px; display: flex; gap: 10px;">
-                        <button class="btn btn-info" onclick="showProjectModal('${project.id}')">✏️ แก้ไข</button>
-                        <button class="btn btn-danger" onclick="confirmDelete('project', '${project.id}')">🗑️ ลบ</button>
+                        <button class="btn btn-info" onclick="event.stopPropagation(); showProjectModal('${project.id}')">✏️ แก้ไข</button>
+                        <button class="btn btn-danger" onclick="event.stopPropagation(); confirmDelete('project', '${project.id}')">🗑️ ลบ</button>
                     </div>
                 </div>`;
             }).join('');
@@ -712,12 +727,12 @@
         }
 
         function renderAreas(areas) {
-            document.getElementById('areas-grid').innerHTML = areas.map(area => `<div class="card">
+            document.getElementById('areas-grid').innerHTML = areas.map(area => `<div class="card clickable-card" onclick="navigateToAndFilter('projects', 'area', '${area.id}')">
                 <h3 style="color: #E59572;">${area.name}</h3>
                 <p style="margin: 10px 0;">${area.description || ''}</p>
                 <div style="margin-top: 20px; display: flex; gap: 10px;">
-                    <button class="btn btn-info" onclick="showAreaModal('${area.id}')">✏️ แก้ไข</button>
-                    <button class="btn btn-danger" onclick="confirmDelete('area', '${area.id}')">🗑️ ลบ</button>
+                    <button class="btn btn-info" onclick="event.stopPropagation(); showAreaModal('${area.id}')">✏️ แก้ไข</button>
+                    <button class="btn btn-danger" onclick="event.stopPropagation(); confirmDelete('area', '${area.id}')">🗑️ ลบ</button>
                 </div>
             </div>`).join('');
         }
@@ -886,19 +901,33 @@
             if (event) event.target.classList.add('active');
         }
 
+        function navigateToAndFilter(view, filterType, filterId) {
+            const targetButton = document.querySelector(`.nav-btn[data-view="${view}"]`);
+            if(targetButton) showView(view, { target: targetButton });
+
+            if (view === 'tasks') {
+                document.getElementById('task-project-filter').value = filterId;
+                filterTasks();
+            } else if (view === 'projects') {
+                document.getElementById('project-area-filter').value = filterId;
+                filterProjects();
+            }
+        }
+
         function updateDropdowns() {
             const projectOptions = currentData.projects.map(p => `<option value="${p.id}">${p.name}</option>`).join('');
             const areaOptions = currentData.areas.map(a => `<option value="${a.id}">${a.name}</option>`).join('');
+            
             ['task-project', 'note-project', 'task-project-filter'].forEach(id => {
                 const select = document.getElementById(id);
                 const currentValue = select.value;
                 select.innerHTML = `<option value="">-- ${id.includes('filter') ? 'ทุกโปรเจค' : 'เลือกโปรเจค'} --</option>${projectOptions}`;
                 select.value = currentValue;
             });
-            ['task-area', 'note-area', 'project-area'].forEach(id => {
+            ['task-area', 'note-area', 'project-area', 'project-area-filter'].forEach(id => {
                 const select = document.getElementById(id);
                 const currentValue = select.value;
-                select.innerHTML = `<option value="">-- เลือกพื้นที่ --</option>${areaOptions}`;
+                select.innerHTML = `<option value="">-- ${id.includes('filter') ? 'ทุกพื้นที่' : 'เลือกพื้นที่'} --</option>${areaOptions}`;
                 select.value = currentValue;
             });
         }
@@ -909,6 +938,12 @@
             $('#task-status-filter').value = '';
             $('#task-project-filter').value = '';
             filterTasks();
+        }
+
+        function clearProjectFilters() {
+            $('#project-search').value = '';
+            $('#project-area-filter').value = '';
+            filterProjects();
         }
 
         function showMessage(message, type = 'success') {
