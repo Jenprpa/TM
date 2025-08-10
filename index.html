@@ -4,6 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Second Brain - Personal Knowledge Management</title>
+    <script src="https://cdn.jsdelivr.net/npm/sortablejs@latest/Sortable.min.js"></script>
     <style>
         /* General Styling */
         * {
@@ -192,11 +193,16 @@
             box-shadow: 0 4px 15px rgba(0, 0, 0, 0.1);
             transition: all 0.3s ease;
             border-left: 4px solid #E59572;
+            cursor: grab;
         }
         .task-item:hover { transform: translateY(-2px); box-shadow: 0 6px 20px rgba(0, 0, 0, 0.15); }
         .task-item.priority-high { border-left-color: #EA7070; }
         .task-item.priority-medium { border-left-color: #ffc107; }
         .task-item.priority-low { border-left-color: #28a745; }
+        .sortable-ghost {
+            opacity: 0.4;
+            background: #f0f0f0;
+        }
 
         /* Forms */
         .form-group { margin-bottom: 20px; }
@@ -397,10 +403,10 @@
                     <h2 style="color: #E59572; margin-bottom: 25px; font-size: 1.8rem;">📊 Eisenhower Matrix</h2>
                     <p style="margin-bottom: 20px; color: #6c757d;">จัดหมวดหมู่งานตามความเร่งด่วนและความสำคัญ</p>
                     <div class="eisenhower-matrix">
-                        <div class="matrix-quadrant urgent-important"><h3 style="margin-bottom: 20px; text-align: center; font-size: 1.2rem;">🔥 เร่งด่วน + สำคัญ</h3><div id="urgent-important-tasks"></div></div>
-                        <div class="matrix-quadrant not-urgent-important"><h3 style="margin-bottom: 20px; text-align: center; font-size: 1.2rem;">📅 ไม่เร่งด่วน + สำคัญ</h3><div id="not-urgent-important-tasks"></div></div>
-                        <div class="matrix-quadrant urgent-not-important"><h3 style="margin-bottom: 20px; text-align: center; font-size: 1.2rem;">⚡ เร่งด่วน + ไม่สำคัญ</h3><div id="urgent-not-important-tasks"></div></div>
-                        <div class="matrix-quadrant not-urgent-not-important"><h3 style="margin-bottom: 20px; text-align: center; font-size: 1.2rem;">📝 ไม่เร่งด่วน + ไม่สำคัญ</h3><div id="not-urgent-not-important-tasks"></div></div>
+                        <div class="matrix-quadrant urgent-important" data-category="urgent-important"><h3 style="margin-bottom: 20px; text-align: center; font-size: 1.2rem;">🔥 เร่งด่วน + สำคัญ</h3><div id="urgent-important-tasks"></div></div>
+                        <div class="matrix-quadrant not-urgent-important" data-category="not-urgent-important"><h3 style="margin-bottom: 20px; text-align: center; font-size: 1.2rem;">📅 ไม่เร่งด่วน + สำคัญ</h3><div id="not-urgent-important-tasks"></div></div>
+                        <div class="matrix-quadrant urgent-not-important" data-category="urgent-not-important"><h3 style="margin-bottom: 20px; text-align: center; font-size: 1.2rem;">⚡ เร่งด่วน + ไม่สำคัญ</h3><div id="urgent-not-important-tasks"></div></div>
+                        <div class="matrix-quadrant not-urgent-not-important" data-category="not-urgent-not-important"><h3 style="margin-bottom: 20px; text-align: center; font-size: 1.2rem;">📝 ไม่เร่งด่วน + ไม่สำคัญ</h3><div id="not-urgent-not-important-tasks"></div></div>
                     </div>
                 </div>
             </div>
@@ -584,6 +590,7 @@
             filterAreas();
             filterNotes();
             updateDropdowns();
+            initializeDragAndDrop();
         }
 
         function updateConnectionStatus(connected) {
@@ -653,7 +660,7 @@
                 if (tasks.length === 0) {
                     container.innerHTML = `<p style="text-align: center; opacity: 0.5; margin-top: 60px; font-style: italic;">ไม่มีงานในหมวดนี้</p>`;
                 } else {
-                    container.innerHTML = tasks.map(task => `<div class="task-item priority-${task.priority}"><h4>${task.title}</h4></div>`).join('');
+                    container.innerHTML = tasks.map(task => `<div class="task-item priority-${task.priority}" data-id="${task.id}"><h4>${task.title}</h4></div>`).join('');
                 }
             });
         }
@@ -951,6 +958,27 @@
             el.textContent = message;
             el.style.display = 'block';
             setTimeout(() => { el.style.display = 'none'; }, 4000);
+        }
+
+        // --- DRAG AND DROP ---
+        function initializeDragAndDrop() {
+            const quadrants = document.querySelectorAll('.matrix-quadrant div[id$="-tasks"]');
+            quadrants.forEach(quadrant => {
+                new Sortable(quadrant, {
+                    group: 'eisenhower',
+                    animation: 150,
+                    onEnd: (evt) => {
+                        const taskId = evt.item.dataset.id;
+                        const newCategory = evt.to.parentElement.dataset.category;
+                        const task = currentData.tasks.find(t => t.id === taskId);
+                        if (task && task.category !== newCategory) {
+                            task.category = newCategory;
+                            sendData('updateTask', task);
+                            showMessage(`✅ ย้าย '${task.title}' ไปยังหมวดหมู่ใหม่แล้ว`, 'success');
+                        }
+                    }
+                });
+            });
         }
 
         // --- DEMO MODE DATA ---
