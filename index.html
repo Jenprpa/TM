@@ -423,6 +423,14 @@
                         <select class="filter-select" id="task-priority-filter" onchange="filterTasks()"><option value="">ทุกระดับความสำคัญ</option><option value="high">🔴 สูง</option><option value="medium">🟡 ปานกลาง</option><option value="low">🟢 ต่ำ</option></select>
                         <select class="filter-select" id="task-status-filter" onchange="filterTasks()"><option value="">ทุกสถานะ</option><option value="pending">⏳ รอดำเนินการ</option><option value="in-progress">🔄 กำลังดำเนินการ</option><option value="completed">✅ เสร็จสิ้น</option></select>
                         <select class="filter-select" id="task-project-filter" onchange="filterTasks()"><option value="">ทุกโปรเจค</option></select>
+                        <!-- ADDED DATE FILTER -->
+                        <select class="filter-select" id="task-date-filter" onchange="filterTasks()">
+                            <option value="">ทุกช่วงเวลา</option>
+                            <option value="today">📅 วันนี้</option>
+                            <option value="this-week">🗓️ สัปดาห์นี้</option>
+                            <option value="this-month">🈷️ เดือนนี้</option>
+                            <option value="overdue">⚠️ เกินกำหนด</option>
+                        </select>
                         <button class="btn btn-warning" onclick="clearTaskFilters()">🗑️ ล้างตัวกรอง</button>
                     </div>
                     <div class="table-container">
@@ -671,13 +679,50 @@
             const priority = document.getElementById('task-priority-filter').value;
             const status = document.getElementById('task-status-filter').value;
             const project = document.getElementById('task-project-filter').value;
+            const dateFilter = document.getElementById('task-date-filter').value;
 
             const filteredTasks = currentData.tasks.filter(task => {
                 const titleMatch = task.title.toLowerCase().includes(searchTerm);
                 const priorityMatch = !priority || task.priority === priority;
                 const statusMatch = !status || task.status === status;
                 const projectMatch = !project || task.project_id === project;
-                return titleMatch && priorityMatch && statusMatch && projectMatch;
+
+                // Date matching logic
+                let dateMatch = true;
+                if (dateFilter) {
+                    const taskDueDate = task.due_date ? new Date(task.due_date) : null;
+                    const today = new Date();
+                    today.setHours(0, 0, 0, 0);
+
+                    if (taskDueDate) {
+                        taskDueDate.setHours(0, 0, 0, 0);
+                    }
+
+                    switch (dateFilter) {
+                        case 'today':
+                            dateMatch = taskDueDate && (taskDueDate.getTime() === today.getTime());
+                            break;
+                        case 'this-week':
+                            const firstDayOfWeek = new Date(today);
+                            // Set to the last Monday (handles week starting on Monday)
+                            firstDayOfWeek.setDate(today.getDate() - (today.getDay() + 6) % 7);
+                            const lastDayOfWeek = new Date(firstDayOfWeek);
+                            lastDayOfWeek.setDate(firstDayOfWeek.getDate() + 6);
+                            dateMatch = taskDueDate && taskDueDate >= firstDayOfWeek && taskDueDate <= lastDayOfWeek;
+                            break;
+                        case 'this-month':
+                            dateMatch = taskDueDate && taskDueDate.getFullYear() === today.getFullYear() && taskDueDate.getMonth() === today.getMonth();
+                            break;
+                        case 'overdue':
+                            // A task is overdue if its due date is in the past and it's not completed.
+                            dateMatch = taskDueDate && taskDueDate < today && task.status !== 'completed';
+                            break;
+                        default:
+                            dateMatch = true;
+                    }
+                }
+
+                return titleMatch && priorityMatch && statusMatch && projectMatch && dateMatch;
             });
             renderTasks(filteredTasks);
         }
@@ -944,6 +989,7 @@
             $('#task-priority-filter').value = '';
             $('#task-status-filter').value = '';
             $('#task-project-filter').value = '';
+            $('#task-date-filter').value = ''; // Reset date filter
             filterTasks();
         }
 
@@ -983,11 +1029,34 @@
 
         // --- DEMO MODE DATA ---
         function getDemoData() {
+            // Get today's date for relevant demo data
+            const today = new Date();
+            const tomorrow = new Date(); tomorrow.setDate(today.getDate() + 1);
+            const yesterday = new Date(); yesterday.setDate(today.getDate() - 1);
+            const nextWeek = new Date(); nextWeek.setDate(today.getDate() + 7);
+
+            const formatDate = (date) => date.toISOString().split('T')[0];
+
             return {
-                areas: [{ id: 'area1', name: '🏢 งาน', description: 'งานประจำ' }],
-                projects: [{ id: 'proj1', name: '🚀 เว็บไซต์ใหม่', area_id: 'area1', status: 'active' }],
-                tasks: [{ id: 'task1', title: '📝 เขียน Proposal', due_date: '2025-08-10', priority: 'high', category: 'urgent-important', status: 'pending', project_id: 'proj1' }],
-                notes: [{ id: 'note1', title: '💡 ไอเดีย', content: 'เพิ่มระบบแจ้งเตือน' }]
+                areas: [
+                    { id: 'area1', name: '🏢 งาน', description: 'ทุกอย่างที่เกี่ยวกับงานประจำ' },
+                    { id: 'area2', name: '🏠 ส่วนตัว', description: 'เป้าหมายและสิ่งที่ต้องทำส่วนตัว' }
+                ],
+                projects: [
+                    { id: 'proj1', name: '🚀 เว็บไซต์ใหม่', area_id: 'area1', status: 'active' },
+                    { id: 'proj2', name: '🧘 สุขภาพ', area_id: 'area2', status: 'active' }
+                ],
+                tasks: [
+                    { id: 'task1', title: '📝 เขียน Proposal', due_date: formatDate(tomorrow), priority: 'high', category: 'urgent-important', status: 'in-progress', project_id: 'proj1' },
+                    { id: 'task2', title: '🎨 ออกแบบ UI/UX', due_date: formatDate(nextWeek), priority: 'medium', category: 'not-urgent-important', status: 'pending', project_id: 'proj1' },
+                    { id: 'task3', title: '📧 ตอบอีเมลลูกค้า', due_date: formatDate(today), priority: 'medium', category: 'urgent-not-important', status: 'pending', project_id: 'proj1' },
+                    { id: 'task4', title: '🧹 ทำความสะอาดบ้าน', due_date: null, priority: 'low', category: 'not-urgent-not-important', status: 'pending', project_id: 'proj2' },
+                    { id: 'task5', title: '🧾 จ่ายบิลค่าไฟ', due_date: formatDate(yesterday), priority: 'high', category: 'urgent-important', status: 'pending', project_id: 'proj2' }
+                ],
+                notes: [
+                    { id: 'note1', title: '💡 ไอเดียสำหรับเว็บไซต์', content: 'เพิ่มระบบแจ้งเตือนผ่าน Line Notify และทำ Dark Mode', project_id: 'proj1' },
+                    { id: 'note2', title: 'เมนูอาหารเย็น', content: 'ส้มตำ ไก่ย่าง ข้าวเหนียว', project_id: 'proj2' }
+                ]
             };
         }
 
